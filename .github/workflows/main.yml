@@ -17,7 +17,6 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
-        # הסרנו את שורת ה-cache כדי למנוע שגיאות על קובץ lock חסר
     
     - name: Install dependencies
       run: |
@@ -30,10 +29,10 @@ jobs:
         bundler-cache: true
     
     - name: Install CocoaPods
+      working-directory: ios
       run: |
-        cd ios
-        pod install
-        cd ..
+        # פקודה זו מכריחה את פוד למצוא את הפרויקט בתיקייה הנוכחית
+        pod install --project-directory=.
     
     - name: Create React Native bundle
       run: |
