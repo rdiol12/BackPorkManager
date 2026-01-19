@@ -7,7 +7,6 @@ on:
 
 jobs:
   build-ios:
-    # עדכון לגרסה החדשה ביותר (רצה על Apple Silicon ARM64)
     runs-on: macos-latest
     
     steps:
@@ -18,22 +17,21 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: '18'
+        # הסרנו את שורת ה-cache כדי למנוע שגיאות על קובץ lock חסר
     
     - name: Install dependencies
       run: |
-        npm ci
+        npm install
     
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.2' # מומלץ לעדכן לגרסה יציבה יותר עם macOS 15
+        ruby-version: '3.2'
         bundler-cache: true
     
     - name: Install CocoaPods
       run: |
         cd ios
-        # שימוש ב-arch x86_64 במידת הצורך אם יש ספריות ישנות, 
-        # אבל ב-macos-latest עדיף להריץ רגיל:
         pod install
         cd ..
     
@@ -49,7 +47,6 @@ jobs:
     - name: Build iOS app
       run: |
         cd ios
-        # הגדרת ה-SDK ל-iphoneos כדי להבטיח בנייה למכשיר אמיתי
         xcodebuild clean archive \
           -workspace BackPorkManager.xcworkspace \
           -scheme BackPorkManager \
@@ -76,5 +73,3 @@ jobs:
         name: BackPork-Manager-IPA
         path: ios/build/BackPorkManager.ipa
         retention-days: 30
-
-
