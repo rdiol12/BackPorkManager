@@ -1,0 +1,99 @@
+name: Build iOS App
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-13
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+        bundler-cache: true
+    
+    - name: Install CocoaPods
+      run: |
+        cd ios
+        pod install
+        cd ..
+    
+    - name: Create React Native bundle
+      run: |
+        npx react-native bundle \
+          --platform ios \
+          --dev false \
+          --entry-file index.js \
+          --bundle-output ios/main.jsbundle \
+          --assets-dest ios
+    
+    - name: Build iOS app
+      run: |
+        cd ios
+        xcodebuild clean archive \
+          -workspace BackPorkManager.xcworkspace \
+          -scheme BackPorkManager \
+          -configuration Release \
+          -archivePath $PWD/build/BackPorkManager.xcarchive \
+          -sdk iphoneos \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          DEVELOPMENT_TEAM=""
+    
+    - name: Create IPA
+      run: |
+        cd ios
+        mkdir -p build/Payload
+        cp -r build/BackPorkManager.xcarchive/Products/Applications/BackPorkManager.app build/Payload/
+        cd build
+        zip -r BackPorkManager.ipa Payload
+    
+    - name: Upload IPA artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: BackPork-Manager-IPA
+        path: ios/build/BackPorkManager.ipa
+        retention-days: 30
+    
+    - name: Create Release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ios/build/BackPorkManager.ipa
+        tag_name: v1.0-${{ github.run_number }}
+        name: BackPork Manager v1.0 Build ${{ github.run_number }}
+        body: |
+          🐷 BackPork Manager iOS App
+          
+          **Installation Instructions:**
+          1. Download the IPA file below
+          2. Install using Sideloadly, AltStore, or TrollStore
+          3. Trust the app in Settings > General > VPN & Device Management
+          
+          **First Time Setup:**
+          1. Run backend server: `python backpork_manager.py`
+          2. Enter server URL in app: `http://YOUR_IP:5000`
+          3. Connect to PS5 and manage your games!
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
