@@ -1,4 +1,4 @@
-name: Build iOS App
+Name: Build iOS App
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
 
 jobs:
   build-ios:
-    runs-on: macos-13
+    # עדכון לגרסה החדשה ביותר (רצה על Apple Silicon ARM64)
+    runs-on: macos-latest
     
     steps:
     - name: Checkout repository
@@ -26,12 +27,14 @@ jobs:
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
       with:
-        ruby-version: '3.0'
+        ruby-version: '3.2' # מומלץ לעדכן לגרסה יציבה יותר עם macOS 15
         bundler-cache: true
     
     - name: Install CocoaPods
       run: |
         cd ios
+        # שימוש ב-arch x86_64 במידת הצורך אם יש ספריות ישנות, 
+        # אבל ב-macos-latest עדיף להריץ רגיל:
         pod install
         cd ..
     
@@ -47,6 +50,7 @@ jobs:
     - name: Build iOS app
       run: |
         cd ios
+        # הגדרת ה-SDK ל-iphoneos כדי להבטיח בנייה למכשיר אמיתי
         xcodebuild clean archive \
           -workspace BackPorkManager.xcworkspace \
           -scheme BackPorkManager \
@@ -73,3 +77,5 @@ jobs:
         name: BackPork-Manager-IPA
         path: ios/build/BackPorkManager.ipa
         retention-days: 30
+
+
