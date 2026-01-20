@@ -1,120 +1,74 @@
-name: Build iOS App (Auto-Setup)
+name: Build iOS App
 
 on:
-push:
-branches: [ main, master ]
-workflow_dispatch:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
 
 jobs:
-build-ios:
-runs-on: macos-13
-
-steps:
-- name: Checkout repository
-  uses: actions/checkout@v4
-
-- name: Setup Node.js
-  uses: actions/setup-node@v4
-  with:
-    node-version: '18'
-
-- name: Create React Native project structure
-  run: |
-    # Install React Native CLI
-    npm install -g react-native-cli
+  build-ios:
+    runs-on: macos-13
     
-    # Create a temporary RN project to get iOS files
-    cd ..
-    npx react-native@0.73.2 init TempProject --version 0.73.2 --skip-install
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
     
-    # Copy iOS project files to our repo
-    cp -r TempProject/ios/TempProject.xcodeproj BackPorkManager/ios/BackPorkManager.xcodeproj
-    cp -r TempProject/ios/TempProject BackPorkManager/ios/BackPorkManager
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
     
-    # Go back to our project
-    cd BackPorkManager
-
-- name: Update project files with our custom content
-  run: |
-    # Our custom Info.plist is already in the repo
-    # Just need to ensure it's in the right place
-    echo "iOS project files ready"
-
-- name: Install dependencies
-  run: |
-    npm install
-
-- name: Setup Ruby
-  uses: ruby/setup-ruby@v1
-  with:
-    ruby-version: '3.0'
-
-- name: Install CocoaPods
-  run: |
-    cd ios
-    pod install
-    cd ..
-
-- name: Create React Native bundle
-  run: |
-    npx react-native bundle \
-      --platform ios \
-      --dev false \
-      --entry-file index.js \
-      --bundle-output ios/main.jsbundle \
-      --assets-dest ios
-
-- name: Build iOS app
-  run: |
-    cd ios
-    xcodebuild clean archive \
-      -workspace BackPorkManager.xcworkspace \
-      -scheme BackPorkManager \
-      -configuration Release \
-      -archivePath $PWD/build/BackPorkManager.xcarchive \
-      -sdk iphoneos \
-      -destination 'generic/platform=iOS' \
-      CODE_SIGN_IDENTITY="" \
-      CODE_SIGNING_REQUIRED=NO \
-      CODE_SIGNING_ALLOWED=NO \
-      DEVELOPMENT_TEAM="" \
-      | xcpretty || true
-
-- name: Create IPA
-  run: |
-    cd ios
-    mkdir -p build/Payload
-    cp -r build/BackPorkManager.xcarchive/Products/Applications/BackPorkManager.app build/Payload/
-    cd build
-    zip -r BackPorkManager.ipa Payload
-
-- name: Upload IPA artifact
-  uses: actions/upload-artifact@v4
-  with:
-    name: BackPork-Manager-IPA
-    path: ios/build/BackPorkManager.ipa
-    retention-days: 30
-
-- name: Create Release
-  if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-  uses: softprops/action-gh-release@v1
-  with:
-    files: ios/build/BackPorkManager.ipa
-    tag_name: v1.0-${{ github.run_number }}
-    name: BackPork Manager v1.0 Build ${{ github.run_number }}
-    body: |
-      🐷 BackPork Manager iOS App
-      
-      **How to Install:**
-      1. Download BackPorkManager.ipa
-      2. Use Sideloadly or AltStore to install
-      3. Trust certificate in iPhone Settings
-      
-      **First Use:**
-      1. Run backend: `python backpork_manager.py`
-      2. Enter server URL in app
-      3. Connect to your PS5!
-    draft: false
-    prerelease: false
-  env:
-    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Create React Native project structure
+      run: |
+        npm install -g react-native-cli
+        cd ..
+        npx react-native@0.73.2 init TempProject --version 0.73.2 --skip-install
+        cp -r TempProject/ios/TempProject.xcodeproj BackPorkManager/ios/BackPorkManager.xcodeproj
+        cp -r TempProject/ios/TempProject BackPorkManager/ios/BackPorkManager
+        cd BackPorkManager
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Setup Ruby
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.0'
+    
+    - name: Install CocoaPods
+      run: |
+        cd ios
+        pod install
+        cd ..
+    
+    - name: Create React Native bundle
+      run: |
+        npx react-native bundle \
+          --platform ios \
+          --dev false \
+          --entry-file index.js \
+          --bundle-output ios/main.jsbundle \
+          --assets-dest ios
+    
+    - name: Build iOS app
+      run: |
+        cd ios
+        xcodebuild clean archive \
+          -workspace BackPorkManager.xcworkspace \
+          -scheme BackPorkManager \
+          -configuration Release \
+          -archivePath $PWD/build/BackPorkManager.xcarchive \
+          -sdk iphoneos \
+          -destination 'generic/platform=iOS' \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO \
+          DEVELOPMENT_TEAM=""
+    
+    - name: Create IPA
+      run: |
+        cd ios
+        mkdir -p build/Payload
+        cp -r build/BackPorkManager.xcarchive/Products/Applications/BackPorkManager.app build/Payload/
+        cd buil​​​​​​​​​​​​​​​​
+nw
