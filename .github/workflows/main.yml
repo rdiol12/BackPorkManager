@@ -12,31 +12,43 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        path: app-repo
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
     
-    - name: Create React Native project structure
+    - name: Clean up any existing project
       run: |
-        npm install -g react-native-cli
-        cd ..
+        rm -rf BackPorkManager
+        echo "Cleaned up workspace"
+    
+    - name: Create fresh React Native project
+      run: |
         npx react-native@0.73.2 init BackPorkManager --version 0.73.2 --skip-install
-        
-        # Copy the generated iOS files to our repo
-        cp -r BackPorkManager/ios/* BackPorkManager_repo/ios/ || true
-        
-        # Rename back to our repo
-        cd BackPorkManager_repo
-      
-    - name: Rename project from TempProject to BackPorkManager
+    
+    - name: Copy our custom files into the project
       run: |
-        # This ensures the Xcode project has the right target name
-        echo "Project structure ready"
+        # Copy our custom App.js and other files
+        cp app-repo/App.js BackPorkManager/ || echo "App.js not found"
+        cp app-repo/package.json BackPorkManager/ || echo "package.json not found"
+        cp app-repo/index.js BackPorkManager/ || echo "index.js not found"
+        cp app-repo/app.json BackPorkManager/ || echo "app.json not found"
+        cp app-repo/metro.config.js BackPorkManager/ || echo "metro.config.js not found"
+        cp app-repo/babel.config.js BackPorkManager/ || echo "babel.config.js not found"
+        
+        # Copy iOS specific files if they exist
+        cp app-repo/ios/Podfile BackPorkManager/ios/ || echo "Podfile not found"
+        cp -r app-repo/ios/BackPorkManager/Info.plist BackPorkManager/ios/BackPorkManager/ || echo "Info.plist not found"
+        
+        echo "Files copied successfully"
     
     - name: Install dependencies
-      run: npm install
+      run: |
+        cd BackPorkManager
+        npm install
     
     - name: Setup Ruby
       uses: ruby/setup-ruby@v1
@@ -45,12 +57,13 @@ jobs:
     
     - name: Install CocoaPods
       run: |
-        cd ios
+        cd BackPorkManager/ios
         pod install
-        cd ..
+        cd ../..
     
     - name: Create React Native bundle
       run: |
+        cd BackPorkManager
         npx react-native bundle \
           --platform ios \
           --dev false \
@@ -60,7 +73,7 @@ jobs:
     
     - name: Build iOS app
       run: |
-        cd ios
+        cd BackPorkManager/ios
         xcodebuild clean archive \
           -workspace BackPorkManager.xcworkspace \
           -scheme BackPorkManager \
@@ -75,7 +88,7 @@ jobs:
     
     - name: Create IPA
       run: |
-        cd ios
+        cd BackPorkManager/ios
         mkdir -p build/Payload
         cp -r build/BackPorkManager.xcarchive/Products/Applications/BackPorkManager.app build/Payload/
         cd build
@@ -85,5 +98,29 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: BackPork-Manager-IPA
-        path: ios/build/BackPorkManager.ipa
+        path: BackPorkManager/ios/build/BackPorkManager.ipa
         retention-days: 30
+    
+    - name: Upload IPA as release
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: BackPorkManager/ios/build/BackPorkManager.ipa
+        tag_name: v1.0-${{ github.run_number }}
+        name: BackPork Manager v1.0 Build ${{ github.run_number }}
+        body: |
+          🐷 **BackPork Manager iOS App**
+          
+          **Installation:**
+          1. Download BackPorkManager.ipa below
+          2. Install with Sideloadly, AltStore, or TrollStore
+          3. Trust in Settings → General → VPN & Device Management
+          
+          **Setup:**
+          1. Run backend: `python backpork_manager.py`
+          2. Enter server URL: `http://YOUR_IP:5000`
+          3. Connect to PS5 and manage games!
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
