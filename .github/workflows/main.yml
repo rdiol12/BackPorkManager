@@ -9,7 +9,6 @@ jobs:
 build-ios:
 runs-on: macos-13
 
-```
 steps:
 - name: Checkout repository
   uses: actions/checkout@v4
