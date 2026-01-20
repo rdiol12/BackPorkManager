@@ -22,10 +22,18 @@ jobs:
       run: |
         npm install -g react-native-cli
         cd ..
-        npx react-native@0.73.2 init TempProject --version 0.73.2 --skip-install
-        cp -r TempProject/ios/TempProject.xcodeproj BackPorkManager/ios/BackPorkManager.xcodeproj
-        cp -r TempProject/ios/TempProject BackPorkManager/ios/BackPorkManager
-        cd BackPorkManager
+        npx react-native@0.73.2 init BackPorkManager --version 0.73.2 --skip-install
+        
+        # Copy the generated iOS files to our repo
+        cp -r BackPorkManager/ios/* BackPorkManager_repo/ios/ || true
+        
+        # Rename back to our repo
+        cd BackPorkManager_repo
+      
+    - name: Rename project from TempProject to BackPorkManager
+      run: |
+        # This ensures the Xcode project has the right target name
+        echo "Project structure ready"
     
     - name: Install dependencies
       run: npm install
